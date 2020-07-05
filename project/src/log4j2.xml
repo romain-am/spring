@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<Configuration status="TRACE">
+  <Appenders>
+    <Console name="stdout" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d[%t]%-5level: %msg%n%throwable"/>
+    </Console>
+    <RollingFile name="rolling" fileName="C:\Users\bahma\eclipse-workspace\project\project.log" filePattern="C:\Users\bahma\eclipse-workspace\project\rolling-%d{MM-dd-yy}.log.gz" immediateFlush="false" append="true">
+      <Policies>
+        <CronTriggeringPolicy schedule="0 0 0 **  **  ?"/>
+        <SizeBasedTriggeringPolicy size="100K"/>
+      </Policies>
+      <PatternLayout pattern="%d[%t]%-5level: %msg%n%throwable"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Root level="WARN">
+      <AppenderRef ref="stdout"/>
+      <AppenderRef ref="rolling"/>
+    </Root>
+  </Loggers>
+</Configuration>
