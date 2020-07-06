@@ -1,11 +1,15 @@
 package main.com.dragonsoft.clients;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PreDestroy;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
 
 import main.com.dragonsoft.credentials.User;
+import main.com.dragonsoft.credentials.UserDTO;
 import main.com.dragonsoft.credentials.UserService;
 import main.com.dragonsoft.elasticsearch.ElasticsearchUserInfoService;
 import main.com.dragonsoft.enums.UrlConstants;
@@ -32,6 +37,9 @@ public class ClientsController {
 
 	private static final Logger LOG
 	= LogManager.getLogger();
+	
+	@Autowired
+    private RestHighLevelClient elasticsearchClient;
 
 	@Autowired
 	private ClientInfoService clientInfoService;
@@ -53,22 +61,20 @@ public class ClientsController {
 	//Initialize session attributes
 	@ModelAttribute("userInfoList")
 	public List<UserInfo> initUserInfoList() {
-		return new ArrayList<UserInfo>();
+		return new ArrayList<>();
 	}
 
 	//HOME PAGE
 	@GetMapping(value="/index_clients")
 	public String choseRole(@ModelAttribute("userInfoList") List<UserInfo> userInfoList, Map<String, Object> model, @RequestParam(required = false) Long d, SessionStatus status) throws DepartmentNotFoundException {
-		//GET LIST OF SEARCHED USERS
-		//model.get("userInfoList");
 
 		//NEW INFORMATIONS
-		model.put("newClient", new ClientInfo());
-		model.put("newDepartment", new Department());
-		model.put("newTeam", new Team());
-		model.put("deleteTeam", new Team());
-		model.put("linkUser", new User());
-		model.put("linkTeam", new Team());
+		model.put("newClient", new ClientInfoDTO());
+		model.put("newDepartment", new DepartmentDTO());
+		model.put("newTeam", new TeamDTO());
+		model.put("deleteTeam", new TeamDTO());
+		model.put("linkUser", new UserDTO());
+		model.put("linkTeam", new TeamDTO());
 
 		//GET NON LINKED TEAMS (NO DEPARTMENT)
 		List<Team> nonLinkedTeams = teamService.getAllNonLinkedTeams();
@@ -103,28 +109,41 @@ public class ClientsController {
 
 	//CREATE NEW CLIENT
 	@PostMapping(value = "/add_client")
-	public String newClientInfoForm(@ModelAttribute("newClient") ClientInfo clientInfo) throws DuplicateEntryException {
-		clientInfoService.save(clientInfo);
+	public String newClientInfoForm(@ModelAttribute("newClient") ClientInfoDTO clientInfo) throws DuplicateEntryException {
+		ClientInfo clientInfoDB = new ClientInfo();
+		clientInfoDB.setName(clientInfo.getName());
+		clientInfoDB.setTelephone(clientInfo.getTelephone());
+		clientInfoDB.setLocation(clientInfo.getLocation());
+		clientInfoDB.setDepartments(clientInfo.getDepartments());
+		clientInfoService.save(clientInfoDB);
 		return "redirect:/"+UrlConstants.INDEX_CLIENTS.toString().toLowerCase();
 	}
 
 	//CREATE NEW DEPARTMENT
 	@PostMapping(value = "/add_department")
-	public String newDepartmentForm(@ModelAttribute("newDepartment") Department department) throws DuplicateEntryException {
-		departmentService.save(department);
+	public String newDepartmentForm(@ModelAttribute("newDepartment") DepartmentDTO department) throws DuplicateEntryException {
+		Department departmentDB = new Department();
+		departmentDB.setName(department.getName());
+		departmentDB.setDescription(department.getDescription());
+		departmentDB.setClientinfo(department.getClientinfo());
+		departmentDB.setTeams(department.getTeams());
+		departmentService.save(departmentDB);
 		return "redirect:/index_clients";
 	}
 
 	//CREATE TEAM
 	@PostMapping(value = "/add_team")
-	public String newTeamForm(@ModelAttribute("newTeam") Team team) throws DuplicateEntryException {
-		teamService.save(team);
+	public String newTeamForm(@ModelAttribute("newTeam") TeamDTO team) throws DuplicateEntryException {
+		Team teamDB = new Team();
+		teamDB.setHead(team.getHead());
+		teamDB.setDepartment(team.getDepartment());
+		teamService.save(teamDB);
 		return "redirect:/"+UrlConstants.INDEX_CLIENTS.toString().toLowerCase();
 	}
 
 	//DELETE
 	@PostMapping(value = "/delete_team")
-	public String deleteTeamForm(@ModelAttribute("deleteTeam") Team team) throws NoEntryException, DuplicateEntryException, TeamNotFoundException, DepartmentNotFoundException {
+	public String deleteTeamForm(@ModelAttribute("deleteTeam") TeamDTO team) throws NoEntryException, DuplicateEntryException, TeamNotFoundException, DepartmentNotFoundException {
 		Team selectedTeam = teamService.get(team.getId());
 
 		switch (team.getDeleteItem()) {
@@ -156,11 +175,11 @@ public class ClientsController {
 
 	//LINK A USER
 	@PostMapping(value = "/link")
-	public String newUserLink(@ModelAttribute("linkUser") User user) throws NoEntryException, TeamNotFoundException {
+	public String newUserLink(@ModelAttribute("linkUser") UserDTO user) throws NoEntryException, TeamNotFoundException {
 		User selectedUser = userService.get(user.getId());
 		Team selectedTeam = teamService.get(user.getTeam().getId());
 
-		if(selectedTeam.getHead() != NOTEAMS) {
+		if(!selectedTeam.getHead().equals(NOTEAMS)) {
 			selectedUser.setTeam(selectedTeam);
 
 			userService.update(selectedUser);
@@ -173,7 +192,7 @@ public class ClientsController {
 
 	//LINK A TEAM
 	@PostMapping(value = "/link_team")
-	public String newTeamLink(@ModelAttribute("linkTeam") Team team) throws NoEntryException, TeamNotFoundException, DepartmentNotFoundException, RuntimeException {
+	public String newTeamLink(@ModelAttribute("linkTeam") TeamDTO team) throws TeamNotFoundException, DepartmentNotFoundException, RuntimeException {
 		Team selectedTeam = teamService.get(team.getId());
 		Department selectedDepartment = departmentService.get(team.getDepartment().getId());
 
@@ -205,4 +224,15 @@ public class ClientsController {
 		model.addAttribute("userInfoList", userInfoList);
 		return "redirect:/"+UrlConstants.INDEX_CLIENTS.toString().toLowerCase();
 	}
+	
+	//CLOSE THE ELASTIC SEARCH REST CLIENT WHEN CONTAINER GOES DOWN
+	@PreDestroy
+    public void cleanup() {
+        try {
+            LOG.info("Closing the ES REST client");
+            this.elasticsearchClient.close();
+        } catch (IOException ioe) {
+            LOG.error("Problem occurred when closing the ES REST client", ioe);
+        }
+    }
 }

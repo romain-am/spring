@@ -20,9 +20,11 @@ public class ElasticRestClientConfig extends AbstractElasticsearchConfiguration 
 
         final ClientConfiguration clientConfiguration = ClientConfiguration.builder()  
             .connectedTo("localhost:9200")
+            .withConnectTimeout(6000)
+            .withSocketTimeout(6000)
             .build();
 
-        return RestClients.create(clientConfiguration).rest();                         
+        return RestClients.create(clientConfiguration).rest();
     }
     
     @Bean

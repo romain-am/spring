@@ -202,8 +202,7 @@ public class UserCV {
 	
 	@JsonIgnore
 	public List<String> getLanguagesArray() {
-		List<String> languagesList = Arrays.asList(languages.split(","));
-		return languagesList;
+		return Arrays.asList(languages.split(","));
 	}
 
 	public void setLanguages(String languages) {
@@ -221,8 +220,7 @@ public class UserCV {
 	
 	@JsonIgnore
 	public List<String> getMiddlewaresArray() {
-		List<String> middleList = Arrays.asList(middlewares.split(","));
-		return middleList;
+		return Arrays.asList(middlewares.split(","));
 	}
 
 	public void setMiddlewares(String middlewares) {
@@ -240,8 +238,7 @@ public class UserCV {
 	
 	@JsonIgnore
 	public List<String> getDatabaseArray() {
-		List<String> databaseList = Arrays.asList(databasesList.split(","));
-		return databaseList;
+		return Arrays.asList(databasesList.split(","));
 	}
 	
 	@JsonIgnore
@@ -255,8 +252,7 @@ public class UserCV {
 	
 	@JsonIgnore
 	public List<String> getOperating_systemArray() {
-		List<String> osList = Arrays.asList(operating_system.split(","));
-		return osList;
+		return Arrays.asList(operating_system.split(","));
 	}
 
 	public void setOperating_system(String operatring_system) {
@@ -282,8 +278,7 @@ public class UserCV {
 	
 	@JsonIgnore
 	public List<String> getFrameworksArray() {
-		List<String> frameList = Arrays.asList(frameworks.split(","));
-		return frameList;
+		return Arrays.asList(frameworks.split(","));
 	}
 
 	public void setFrameworks(String frameworks) {

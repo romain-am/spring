@@ -18,19 +18,15 @@ public class Routehandler implements AuthenticationSuccessHandler {
         Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
         if(roles.size() > 1) {
         	response.sendRedirect("login_role");
-        	return;
         }
         else if (roles.contains("ROLE_ADMIN")) {
             response.sendRedirect("index_admin");
-            return;
         }
         else if (roles.contains("ROLE_USER")) {
             response.sendRedirect("index_user");
-            return;
         }
         else {
         	response.sendRedirect("login?error=no_role");
-        	return;
         }
     }
 }

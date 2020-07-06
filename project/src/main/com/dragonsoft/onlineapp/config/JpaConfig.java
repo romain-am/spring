@@ -42,7 +42,10 @@ public class JpaConfig {
 	    dataSource.setUrl(
 	      reader.getJdbc_url()+"?emulateLocators=true"); 
 	    
-	    reader = null;
+	    reader.setJdbc_driver(null);
+	    reader.setJdbc_password(null);
+	    reader.setJdbc_url(null);
+	    reader.setJdbc_user(null);
 	     
 	    return dataSource;
 	}
