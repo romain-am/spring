@@ -14,7 +14,7 @@ public class CustomFileUtil {
 	
 private Set<String> results = new HashSet<String>();
 	
-	public String findDir(File root, String name)
+	public String findDirfromRoot(File root, String name)
 	{
 		
 	    if (root.getName().equals(name))
@@ -30,7 +30,7 @@ private Set<String> results = new HashSet<String>();
 	        {
 	            if(f.isDirectory())
 	            {   
-	                String myResult = findDir(f, name);
+	                String myResult = findDirfromRoot(f, name);
 	                //this just means this branch of the
 	                //recursion reached the end of the
 	                //directory tree without results, but
@@ -54,7 +54,7 @@ private Set<String> results = new HashSet<String>();
 	    return null;
 	}
 
-	public String getResults() {
+	public String getDirectoryFound() {
 		List<String> resultsList = results.stream().sorted(Comparator.comparingInt(String::length))
 		.collect(Collectors.toList());
 		return resultsList.get(0);

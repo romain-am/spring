@@ -31,7 +31,7 @@ public class ContextListener implements ServletContextListener {
 	public void contextInitialized(ServletContextEvent event) {
 		//Create log4j2 xml and start logging
 		Log4j2XmlCreator log = new Log4j2XmlCreator(event);
-		log.create();
+		log.createAndGenerate();
 
 		//Get properties
 		Resource resource = new ClassPathResource("/resources/application.properties");
@@ -45,7 +45,7 @@ public class ContextListener implements ServletContextListener {
 		}
 
 		//Launch Elastic Search Instance on port 9200
-		if(SocketChecker.isReachable("127.0.0.1", 9200, 10000) != true) {
+		if(SocketChecker.checkIfReachable("127.0.0.1", 9200, 10000) != true) {
 			try {
 				String launcherPath = props.getProperty("elasticsearch.launcher");
 				Runtime.
@@ -53,7 +53,7 @@ public class ContextListener implements ServletContextListener {
 				exec("cmd /c start \"\" "+launcherPath);
 
 				//Wait for socket response
-				while(SocketChecker.isReachable("127.0.0.1", 9200, 10000) != true) {
+				while(SocketChecker.checkIfReachable("127.0.0.1", 9200, 10000) != true) {
 					LOG.warn("Waiting for ElasticSearch instance to respond on port 9200, can you reach localhost:9200 ? ..");
 				}
 			} catch (IOException e) {

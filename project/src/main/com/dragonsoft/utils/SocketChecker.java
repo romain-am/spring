@@ -6,7 +6,7 @@ import java.net.Socket;
 
 public class SocketChecker {
 	
-	public static boolean isReachable(String addr, int openPort, int timeOutMillis) {
+	public static boolean checkIfReachable(String addr, int openPort, int timeOutMillis) {
 	    // Any Open port on other machine
 	    // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
 	    try {

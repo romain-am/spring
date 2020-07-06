@@ -38,28 +38,69 @@ public class Log4j2XmlCreator {
 
 	}
 
-	public void create() {
-		//Get properties
-		Resource resource = new ClassPathResource("/resources/application.properties");
-		Properties props = null;
+	public Properties getProperties(Resource resource) {
 		try {
-			props = PropertiesLoaderUtils.loadProperties(resource);
+			return PropertiesLoaderUtils.loadProperties(resource);
 		} catch (IOException e0) {
-			// TODO Auto-generated catch block
 			System.out.println("Project missing application.properties in src/resources folder");
 			System.out.println(e0.getMessage());
 			System.out.println("Exiting application..");
-			System.exit(1);
+			return null;
 		}
 
-		ServletContext context = event.getServletContext();
+	}
 
-		// get FileSystem separator
+	public String getFileSystemSeparator(String option) {
 		FileSystem fileSystem = FileSystems.getDefault();
 		String fileSystemSeparator = fileSystem.getSeparator();
-		if(fileSystemSeparator.equals("\\")){
+
+		if(option.equals("escape") && fileSystemSeparator.equals("\\")) {
 			fileSystemSeparator = "\\\\";
 		}
+
+		return fileSystemSeparator;
+	}
+
+	public File getProjectPath(ServletContext context) {
+		String workspacePath = context.getRealPath("resources/").split(".metadata")[0];
+		String projectName = context.getRealPath("resources/").split("wtpwebapps")[1].split(getFileSystemSeparator("escape"))[1];
+		String projectPath = workspacePath  + projectName + getFileSystemSeparator("dont_escape");
+		return new File(projectPath);
+
+	}
+
+	public void generateLogFile(ServletContext context, String xml) {
+		//Get project Path
+		File projectPath = getProjectPath(context);
+		
+		//Find src folder
+		CustomFileUtil fileUtil = new CustomFileUtil();
+		fileUtil.findDirfromRoot(projectPath, "src");
+		String logFilefinalPath = fileUtil.getDirectoryFound() + getFileSystemSeparator("dont_escape") + "log4j2.xml";
+		
+		//Create log4j.xml
+		File logFile = new File(logFilefinalPath);
+		try {
+			logFile.createNewFile();
+			BufferedWriter writer = new BufferedWriter(new FileWriter(logFile));
+			writer.write(xml);		     
+			writer.close();
+		} catch (IOException e1) {
+			System.out.println("Project can't create log4j2.xml in src folder :");
+			System.out.println(e1.getMessage());
+			System.out.println("You can add it manually :");
+			System.out.println("log4j2.xml generated :");
+			System.out.println(xml);
+		}
+
+	}
+
+	public void createAndGenerate() {
+		//Get properties
+		Resource resource = new ClassPathResource("/resources/application.properties");
+
+		Properties props = getProperties(resource);
+		if(props == null) System.exit(1);
 
 		//Create the configuration builder
 		ConfigurationBuilder<BuiltConfiguration> builder
@@ -86,7 +127,7 @@ public class Log4j2XmlCreator {
 		rollingFile.addAttribute("fileName", props.getProperty("logfile.path"));
 		String filename = 
 				props.getProperty("logfile.path").substring(
-				props.getProperty("logfile.path").lastIndexOf(fileSystem.getSeparator()) + 1);
+						props.getProperty("logfile.path").lastIndexOf(getFileSystemSeparator("dont_escape")) + 1);
 		rollingFile.addAttribute("filePattern", props.getProperty("logfile.path").split(filename)[0]+"rolling-%d{MM-dd-yy}.log.gz");
 		rollingFile.addAttribute("immediateFlush", false);
 		rollingFile.addAttribute("append", true);
@@ -118,58 +159,12 @@ public class Log4j2XmlCreator {
 
 			builder.add(logger); */
 
-		//Write xml configuration file
+		//Get xml configuration file
 		String xml = builder.toXmlConfiguration();
-
-		//Get project path
-		String workspacePath = context.getRealPath("resources/").split(".metadata")[0];
-
-		String projectName = context.getRealPath("resources/").split("wtpwebapps")[1].split(fileSystemSeparator)[1];
-		String projectPath = workspacePath  + projectName + fileSystem.getSeparator();
-
-		File projectFile = new File(projectPath);
-
-		//Find src folder and create log4j.xml
-		CustomFileUtil fileUtil = new CustomFileUtil();
-		fileUtil.findDir(projectFile, "src");
-		String srcFolder = fileUtil.getResults();
-		String logFilePath = srcFolder + fileSystem.getSeparator() + "log4j2.xml";
-
-		File logFile = new File(logFilePath);
-		try {
-			logFile.createNewFile();
-			BufferedWriter writer = new BufferedWriter(new FileWriter(logFile));
-			writer.write(xml);		     
-			writer.close();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			System.out.println("Project can't create log4j2.xml in src folder :");
-			System.out.println(e1.getMessage());
-			System.out.println("You can add it manually :");
-			System.out.println("log4j2.xml generated :");
-			System.out.println(xml);
-		}
-
-
-		//Tell log4j2 to use our configuration
-
-		//Load the xml configuration
-	/*	InputStream inputStream;
-		try {
-			inputStream = new FileInputStream(logFile);
-			LoggerContext.getContext(false)
-			.start(new XmlConfiguration(null, new ConfigurationSource(inputStream)));
-		} catch (FileNotFoundException e2) {
-			// TODO Auto-generated catch block
-			System.out.println("Problem encoutered while loading log4j2.xml :");
-			System.out.println(e2.getMessage());
-		} catch (IOException e3) {
-			// TODO Auto-generated catch block
-			System.out.println("Problem encoutered while loading log4j2.xml :");
-			System.out.println(e3.getMessage());
-		}
 		
-		*/
+		ServletContext context = event.getServletContext();
+		generateLogFile(context, xml);
+		
 	}
 
 }
