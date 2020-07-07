@@ -11,9 +11,8 @@ import javax.servlet.annotation.WebListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import main.com.dragonsoft.utils.FileSystemOperations;
 import main.com.dragonsoft.utils.Log4j2XmlCreator;
 import main.com.dragonsoft.utils.SocketChecker;
 
@@ -26,6 +25,8 @@ public class ContextListener implements ServletContextListener {
 
 	private static final Logger LOG
 	= LogManager.getLogger();
+	
+	private FileSystemOperations fsOperations = new FileSystemOperations();
 
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
@@ -34,15 +35,7 @@ public class ContextListener implements ServletContextListener {
 		log.createAndGenerate();
 
 		//Get properties
-		Resource resource = new ClassPathResource("/resources/application.properties");
-		Properties props = null;
-		try {
-			props = PropertiesLoaderUtils.loadProperties(resource);
-		} catch (IOException e0) {
-			// TODO Auto-generated catch block
-			LOG.warn("Project missing application.properties in src/resources folder");
-			LOG.warn(e0.getMessage());
-		}
+		Properties props = fsOperations.getProperties(new ClassPathResource("/resources/application.properties"));
 
 		//Launch Elastic Search Instance on port 9200
 		if(SocketChecker.checkIfReachable("127.0.0.1", 9200, 10000) != true) {

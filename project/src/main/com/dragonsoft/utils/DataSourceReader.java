@@ -16,10 +16,6 @@ public class DataSourceReader {
 	private String jdbc_password;
 	private String jdbc_driver;
 	
-	public DataSourceReader(){
-	
-	}
-	
 	public void generateValues(String xmlPath) throws JAXBException {
 		JAXBContext jc = JAXBContext.newInstance(Persistence.class);
 

@@ -2,22 +2,14 @@ package main.com.dragonsoft.utils;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.util.Properties;
 
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
@@ -25,58 +17,26 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFact
 import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
-import org.apache.logging.log4j.core.config.xml.XmlConfiguration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 public class Log4j2XmlCreator {
 	private ServletContextEvent event;
+	private FileSystemOperations fsOperations;
 
 	public Log4j2XmlCreator(ServletContextEvent event) {
 		this.event = event;
+		fsOperations = new FileSystemOperations();
 
 	}
 
-	public Properties getProperties(Resource resource) {
-		try {
-			return PropertiesLoaderUtils.loadProperties(resource);
-		} catch (IOException e0) {
-			System.out.println("Project missing application.properties in src/resources folder");
-			System.out.println(e0.getMessage());
-			System.out.println("Exiting application..");
-			return null;
-		}
-
-	}
-
-	public String getFileSystemSeparator(String option) {
-		FileSystem fileSystem = FileSystems.getDefault();
-		String fileSystemSeparator = fileSystem.getSeparator();
-
-		if(option.equals("escape") && fileSystemSeparator.equals("\\")) {
-			fileSystemSeparator = "\\\\";
-		}
-
-		return fileSystemSeparator;
-	}
-
-	public File getProjectPath(ServletContext context) {
-		String workspacePath = context.getRealPath("resources/").split(".metadata")[0];
-		String projectName = context.getRealPath("resources/").split("wtpwebapps")[1].split(getFileSystemSeparator("escape"))[1];
-		String projectPath = workspacePath  + projectName + getFileSystemSeparator("dont_escape");
-		return new File(projectPath);
-
-	}
-
-	public void generateLogFile(ServletContext context, String xml) {
+	public void generateLogFile(String xml) throws IOException {
 		//Get project Path
-		File projectPath = getProjectPath(context);
+		File projectPath = fsOperations.getProjectPath();
 		
 		//Find src folder
-		CustomFileUtil fileUtil = new CustomFileUtil();
-		fileUtil.findDirfromRoot(projectPath, "src");
-		String logFilefinalPath = fileUtil.getDirectoryFound() + getFileSystemSeparator("dont_escape") + "log4j2.xml";
+		fsOperations.findDirfromRoot(projectPath, "src");
+		String logFilefinalPath = fsOperations.getDirectoryFound() + fsOperations.getFileSystemSeparator("dont_escape") + "log4j2.xml";
 		
 		//Create log4j.xml
 		File logFile = new File(logFilefinalPath);
@@ -99,7 +59,7 @@ public class Log4j2XmlCreator {
 		//Get properties
 		Resource resource = new ClassPathResource("/resources/application.properties");
 
-		Properties props = getProperties(resource);
+		Properties props = fsOperations.getProperties(resource);
 		if(props == null) System.exit(1);
 
 		//Create the configuration builder
@@ -127,7 +87,7 @@ public class Log4j2XmlCreator {
 		rollingFile.addAttribute("fileName", props.getProperty("logfile.path"));
 		String filename = 
 				props.getProperty("logfile.path").substring(
-						props.getProperty("logfile.path").lastIndexOf(getFileSystemSeparator("dont_escape")) + 1);
+						props.getProperty("logfile.path").lastIndexOf(fsOperations.getFileSystemSeparator("dont_escape")) + 1);
 		rollingFile.addAttribute("filePattern", props.getProperty("logfile.path").split(filename)[0]+"rolling-%d{MM-dd-yy}.log.gz");
 		rollingFile.addAttribute("immediateFlush", false);
 		rollingFile.addAttribute("append", true);
@@ -161,9 +121,12 @@ public class Log4j2XmlCreator {
 
 		//Get xml configuration file
 		String xml = builder.toXmlConfiguration();
-		
-		ServletContext context = event.getServletContext();
-		generateLogFile(context, xml);
+		try {
+			generateLogFile(xml);
+		} catch (IOException e) {
+			System.out.println("Could not generate log file : ");
+			System.out.println(e.getMessage());
+		}
 		
 	}
 

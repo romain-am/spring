@@ -4,28 +4,22 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.util.Optional;
 import java.util.Random;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
 import main.com.dragonsoft.clients.ClientInfo;
 import main.com.dragonsoft.clients.ClientInfoService;
-import main.com.dragonsoft.clients.Department;
-import main.com.dragonsoft.clients.DepartmentService;
 import main.com.dragonsoft.credentials.User;
 import main.com.dragonsoft.credentials.UserService;
 import main.com.dragonsoft.exceptions.DuplicateEntryException;
 import main.com.dragonsoft.exceptions.NoEntryException;
-import main.com.dragonsoft.utils.CustomFileUtil;
+import main.com.dragonsoft.utils.FileSystemOperations;
 import test.com.dragonsoft.servicelayer.contextconfigs.UserServiceTestJpaConfig;
 
 @Transactional
@@ -50,11 +44,13 @@ public class UserServiceLayerTest {
 	private static final String USERNAME = "SpringTest"+numberTag+"@Test.fr";
 	private static final String PASSWORD = "SpringTestPassword";
 	private static final String DBPOPULATIONFOLDER = "db_population";
+	private FileSystemOperations fsOperations;
 
 	public UserServiceLayerTest(){
 		Random rand = new Random();
 		String randomNumber = String.valueOf(rand.nextInt(100000));
 		this.numberTag = randomNumber;
+		fsOperations = new FileSystemOperations();
 	}
 
 	public User createTestUser() {
@@ -68,35 +64,31 @@ public class UserServiceLayerTest {
 	@Test
 	public void populationTest() {
 		// get FileSystem separator
-		FileSystem fileSystem = FileSystems.getDefault();
-		String fileSystemSeparator = fileSystem.getSeparator();
-
-		//Instantiate the json file creator
-		JsonPopulator jsonCreator = new JsonPopulator();
+		String fileSystemSeparator = fsOperations.getFileSystemSeparator("dont_escape");
 
 		//Get last id from user repository
 		User lastUser = userService.getLastIdinDb();
-		Long userId = lastUser.getId();
+		Long lastUserId = lastUser.getId();
 		
 		//Get last id from clientInfo repository
 		ClientInfo lastClientInfo = clientInfoService.getLastIdinDb();
-		Long clientInfoId = lastClientInfo.getId();
+		Long lastClientInfoId = lastClientInfo.getId();
 		
 
 		try {
-			//Find resources folder
-			Resource resource = new ClassPathResource("/resources/" + DBPOPULATIONFOLDER);
-			File dbpopulationPath = resource.getFile();
-			String projectPath = dbpopulationPath.getAbsolutePath().split("target")[0];
-			CustomFileUtil fileUtil = new CustomFileUtil();
-			fileUtil.findDir(new File(projectPath), "resources");
-			String rsrcFolder = fileUtil.getResults();
+			//Find dbpopulation folder
+			File projectPath = fsOperations.getProjectPath();
+			fsOperations.findDirfromRoot(projectPath, "resources");
+			String resourceFolder = fsOperations.getDirectoryFound();
+			File dbpopulationFolder = new File(resourceFolder + fileSystemSeparator + DBPOPULATIONFOLDER); 
 			
+			JsonPopulator jsonCreator = new JsonPopulator();
 			//List files to parse
-			String[] populatorFiles = dbpopulationPath.list();
+			String[] populatorFiles = dbpopulationFolder.list();
 			for(int i = 0; i < populatorFiles.length; i++) {
-				jsonCreator.createUsers(rsrcFolder + fileSystemSeparator +DBPOPULATIONFOLDER+ fileSystemSeparator +populatorFiles[i], userId);
-				jsonCreator.createClientInfos(rsrcFolder + fileSystemSeparator +DBPOPULATIONFOLDER+ fileSystemSeparator +populatorFiles[i], clientInfoId);
+				String populatorFile = dbpopulationFolder.getAbsolutePath() + fileSystemSeparator +populatorFiles[i];
+				jsonCreator.createUsers(populatorFile, lastUserId);
+				jsonCreator.createClientInfos(populatorFile, lastClientInfoId);
 			}
 		} catch (IOException e1) {
 			fail("Could not create json file for users database population :");
