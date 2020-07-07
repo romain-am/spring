@@ -85,10 +85,10 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
 	public Jackson2RepositoryPopulatorFactoryBean getRespositoryPopulator() throws IOException {
 		Jackson2RepositoryPopulatorFactoryBean factory = new Jackson2RepositoryPopulatorFactoryBean();
 
-		//Get all generated json files from the testing
+		//Get all json files generated from the testing
 		Resource dbpopulationjsonResourcePath = new ClassPathResource("/resources/db_population_json");
-		File dbpopulationjsonPath = dbpopulationjsonResourcePath.getFile();
-		String[] jsonFiles = dbpopulationjsonPath.list();
+		File dbpopulationjsonFolder = dbpopulationjsonResourcePath.getFile();
+		String[] jsonFiles = dbpopulationjsonFolder.list();
 
 		if(jsonFiles.length > 0) {
 			Scanner scanner = new Scanner(System.in);
