@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.springframework.core.io.ClassPathResource;
@@ -21,6 +25,23 @@ public class FileSystemOperations {
 	 */
 
 	private Set<String> results = new HashSet<>();
+	
+	public Date generateRandomdate() {
+		//Random date
+		//default time zone
+		ZoneId defaultZoneId = ZoneId.systemDefault();
+
+		LocalDate startDate = LocalDate.of(1990, 1, 1); //start date
+		long start = startDate.toEpochDay();
+
+		LocalDate endDate = LocalDate.now(); //end date
+		long end = endDate.toEpochDay();
+
+		long randomEpochDay = ThreadLocalRandom.current().longs(start, end).findAny().getAsLong(); //random date in the range
+		LocalDate localDate = LocalDate.ofEpochDay(randomEpochDay);
+
+		return Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
+	}
 
 	public Properties getProperties(Resource resource) {
 		try {

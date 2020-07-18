@@ -32,6 +32,7 @@ import main.com.dragonsoft.credentials.UserAuthority;
 import main.com.dragonsoft.credentials.UserRepository;
 import main.com.dragonsoft.users.UserCV;
 import main.com.dragonsoft.users.UserInfo;
+import main.com.dragonsoft.utils.FileSystemOperations;
 
 @Component
 public class JsonPopulator {
@@ -42,6 +43,8 @@ public class JsonPopulator {
 
 	@Autowired
 	UserRepository userRepo;
+	
+	private FileSystemOperations fsOperations;
 
 	private static final String EMAILEND = "@test.fr";
 	private static final String PASSWORD = "test_password";
@@ -637,13 +640,10 @@ public class JsonPopulator {
 			"Victoire Guillaume",
 			"Sylvaine Aliker"));
 
-	public File getJsonFilePath(String pathurl) throws IOException {
+	public File createJsonFile(String pathurl) throws IOException {
 		File txtFile = new File(pathurl);
 
-		//Get project path
-		// get FileSystem separator
-		FileSystem fileSystem = FileSystems.getDefault();
-		String fileSystemSeparator = fileSystem.getSeparator();
+		String fileSystemSeparator = FileSystems.getDefault().getSeparator();
 
 		String rsrcFolder = pathurl.split("db_population")[0];
 		String jsonFilePath = rsrcFolder + "db_population_json" + fileSystemSeparator + txtFile.getName() + ".json";
@@ -653,12 +653,44 @@ public class JsonPopulator {
 
 		return jsonFile;
 	}
+	
+	public String generateCVinfoFromList(String cvInfo, List<String> infoList) {
+		Random r = new Random();
+		Integer choices = 0;
+		String result = "";
+		
+		switch (cvInfo) {
+		case "framework":
+		case "language" :
+		case "os" :
+			choices = r.nextInt(5-1) + 1;
+			for(int i = 0; i < choices; i++) {
+				result += infoList.get(r.nextInt(infoList.size())) + ",";
+			}
+			break;
+		case "middleware" :
+		case "database" :
+			choices = r.nextInt(4-1) + 1;
+			for(int i = 0; i < choices; i++) {
+				result += infoList.get(r.nextInt(infoList.size())) + ",";
+			}
+			break;
+		case "city" :
+			result = infoList.get(r.nextInt(infoList.size()));
+			break;
+		default :
+			break;
+		}
+		
+		return result;
+		
+	}
 
 	public void createUsers(String usernames_txt_file, Long last_id) throws IOException {
 		File txtFile = new File(usernames_txt_file);
 		if(txtFile.getName().startsWith("users")) {
 
-			File jsonFile = getJsonFilePath(usernames_txt_file);
+			File jsonFile = createJsonFile(usernames_txt_file);
 
 			FileOutputStream fos = new FileOutputStream(jsonFile);
 			BufferedReader reader = new BufferedReader(new FileReader(usernames_txt_file));
@@ -689,63 +721,25 @@ public class JsonPopulator {
 				//Set default informations
 				UserInfo info = new UserInfo();
 				UserCV cv = new UserCV();
+				
 
-				//Random date
-				//default time zone
-				ZoneId defaultZoneId = ZoneId.systemDefault();
-
-				LocalDate startDate = LocalDate.of(1990, 1, 1); //start date
-				long start = startDate.toEpochDay();
-
-				LocalDate endDate = LocalDate.now(); //end date
-				long end = endDate.toEpochDay();
-
-				long randomEpochDay = ThreadLocalRandom.current().longs(start, end).findAny().getAsLong(); //random date in the range
-				LocalDate localDate = LocalDate.ofEpochDay(randomEpochDay);
-
-				Date out = Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
+				Date out = fsOperations.generateRandomdate();
 
 				info.setCus_dob(out);
 				info.setCus_email(user.getUsername());
 				info.setCus_name(line);
 				info.setUserInfo(user);
 
-				Random r = new Random();
-				info.setCus_addr(citiesList.get(r.nextInt(citiesList.size())));
+				info.setCus_addr(generateCVinfoFromList("city", citiesList));
 				info.setCus_tel(" ");
+				Random r = new Random();
 				cv.setExperience(r.nextInt(20-1) + 1);
 
-				Integer dbChoices = r.nextInt(4-1) + 1;
-				Integer frameChoices = r.nextInt(5-1) + 1;
-				Integer languageChoices = r.nextInt(5-1) + 1;
-				Integer middlewareChoices = r.nextInt(4-1) + 1;
-				Integer osChoices = r.nextInt(5-1) + 1;
-				String frameworks = "";
-				String languages = "";
-				String middlewares = "";
-				String operatingsystems = "";
-				String database = "";
-				for(int i = 0; i < frameChoices; i++) {
-					frameworks += frameworksList.get(r.nextInt(frameworksList.size())) + ",";
-				}
-				for(int i = 0; i < languageChoices; i++) {
-					languages += languageList.get(r.nextInt(languageList.size())) + ",";
-				}
-				for(int i = 0; i < middlewareChoices; i++) {
-					middlewares += middlewareList.get(r.nextInt(middlewareList.size())) + ",";
-				}
-				for(int i = 0; i < osChoices; i++) {
-					operatingsystems += osList.get(r.nextInt(osList.size())) + ",";
-				}
-				for(int i = 0; i < dbChoices; i++) {
-					database += databaseList.get(r.nextInt(databaseList.size())) + ",";
-				}
-
-				cv.setFrameworks(frameworks);
-				cv.setLanguages(languages);
-				cv.setMiddlewares(middlewares);
-				cv.setOperating_system(operatingsystems);
-				cv.setDatabasesList(database);
+				cv.setFrameworks(generateCVinfoFromList("framework", frameworksList));
+				cv.setLanguages(generateCVinfoFromList("language", languageList));
+				cv.setMiddlewares(generateCVinfoFromList("middleware", middlewareList));
+				cv.setOperating_system(generateCVinfoFromList("os", osList));
+				cv.setDatabasesList(generateCVinfoFromList("database", databaseList));
 
 				cv.setUserCV(user);
 
@@ -791,7 +785,7 @@ public class JsonPopulator {
 		File txtFile = new File(usernames_txt_file);
 		if(txtFile.getName().startsWith("clientinfos")) {
 
-			File jsonFile = getJsonFilePath(usernames_txt_file);
+			File jsonFile = createJsonFile(usernames_txt_file);
 
 			FileOutputStream fos = new FileOutputStream(jsonFile);
 			BufferedReader reader = new BufferedReader(new FileReader(usernames_txt_file));
@@ -828,7 +822,7 @@ public class JsonPopulator {
 				ClientInfo clientInfo = new ClientInfo();
 				clientInfo.setId(id);
 				clientInfo.setName(line);
-				clientInfo.setLocation(citiesList.get(r.nextInt(citiesList.size())));
+				clientInfo.setLocation(generateCVinfoFromList("city", citiesList));
 				clientInfo.setTelephone(" ");
 
 				Integer departmentsNumber = r.nextInt(5-1) + 1;
@@ -836,7 +830,7 @@ public class JsonPopulator {
 				for(int j = 0; j < departmentsNumber; j++) {
 					Department department = new Department();
 					String departmentName = "";
-					Integer lettersNumber = r.nextInt(5-1) + 1;
+					Integer lettersNumber = r.nextInt(7-3) + 3;
 					for(int i = 0; i < lettersNumber; i++) {
 						departmentName += (char) ((int)(Math.random()*100)%26+65);
 					}
