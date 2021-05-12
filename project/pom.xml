@@ -9,7 +9,7 @@
 
 	<properties>
 		<spring.version>5.1.5.RELEASE</spring.version>
-		<spring.security.version>5.0.0.RELEASE</spring.security.version>
+		<spring.security.version>5.2.10.RELEASE</spring.security.version>
 		<spring.data.version>2.1.5.RELEASE</spring.data.version>
 		<spring.data.elastic.version>3.2.7.RELEASE</spring.data.elastic.version>
 		<spring.content.jpa.version>1.0.0.M5</spring.content.jpa.version>
