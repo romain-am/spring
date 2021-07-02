@@ -14,7 +14,7 @@
 		<spring.data.elastic.version>3.2.7.RELEASE</spring.data.elastic.version>
 		<spring.content.jpa.version>1.0.0.M5</spring.content.jpa.version>
 		<hibernate.version>5.4.1.Final</hibernate.version>
-		<elasticsearch.version>6.5.0</elasticsearch.version>
+		<elasticsearch.version>6.8.15</elasticsearch.version>
 		<junit.version>5.6.2</junit.version>
 		<log4j2.version>2.7</log4j2.version>
 		<gson.version>2.3.1</gson.version>
